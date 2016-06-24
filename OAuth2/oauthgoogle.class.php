@@ -24,6 +24,18 @@ SOFTWARE.
 */
 require_once 'oauth.class.php';
 
+/**
+	\file
+	\brief Contains class OAuthGoogle
+	
+	\class OAuthGoogle
+	\brief OAuth Google subclass
+	
+	This is the subclass that will handle Google OAuth2 communications.
+	
+	\todo Everything.
+*/
+
 class OAuthGoogle extends OAuthBase
 {
 	function __construct()
@@ -34,32 +46,28 @@ class OAuthGoogle extends OAuthBase
 		parent::setTokenEndpoint('www.googleapis.com/oauth2/v4/token');
 		$this->addResourceScope('https://www.googleapis.com/auth/userinfo.email');
 		$this->addResourceScope('https://www.googleapis.com/auth/userinfo.profile');
-		$this->setAuthorizeRedirectURI('dev.nuubz.com/oauthresponse');
 		$this->setAuthFlag(OAuthBase::AUTH_BASIC);
 		$this->setAuthFlag(OAuthBase::AUTH_POST_FORM_ENCODED);
 	}
 	protected function processAuthGrant($GRANT,$TYPE)
 	{
-		//preout($TYPE);
-		//preout($GRANT);
 		if( ! empty($GRANT) )
 		{
 			if( strcasecmp($TYPE,'application/json') == 0 )
 			{
 				try
 				{
-				$tokenData = json_decode($GRANT,true);
-				if( isset($tokenData['access_token']) ) $this->setAccessToken($tokenData['access_token']);
-				if( isset($tokenData['refresh_token']) ) $this->setRefreshToken($tokenData['refresh_token']);
-				if( isset($tokenData['expires_in']) ) $this->setAccessTokenExpiry(date('Y-m-d H:i:s',strtotime('+' . $tokenData['expires_in'] . ' seconds')));
-				//var_dump($tokenData);
-				if( ! is_null($this->getAccessToken()) ) echo 'successfully obtained access token!';
+					$tokenData = json_decode($GRANT,true);
+					if( isset($tokenData['access_token']) ) $this->setAccessToken($tokenData['access_token']);
+					if( isset($tokenData['refresh_token']) ) $this->setRefreshToken($tokenData['refresh_token']);
+					if( isset($tokenData['expires_in']) ) $this->setAccessTokenExpiry(date('Y-m-d H:i:s',strtotime('+' . $tokenData['expires_in'] . ' seconds')));
+					if( ! is_null($this->getAccessToken()) ) echo 'successfully obtained access token!';
+					die('<br>end');
 				}
 				catch(Exception $e)
 				{
-					//echo $e->getMessage(). "\n";
+					die($e->getMessage());
 				}
-				//exit();
 			}
 		}
 	}

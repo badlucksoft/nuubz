@@ -1,10 +1,53 @@
 <?php
 /*
-	RFC 6749
-	Important sections:
-		4.1
-		4.2.1 Authorization Request
-		4.2.2 Access Token Response
+The MIT License (MIT)
+
+Copyright (c) 2016 Raymond Rodgers
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+/**
+	\mainpage
+	These classes implement the OAuth2 specification in RFC 6749 (https://tools.ietf.org/html/rfc6749 ) for Access Token support to OAuth2
+	servers. Though you can modify the OAuthBase class for specific hosts, I have had success
+	communicating with remote OAuth2 servers by creating subclasses for them, such as with Google
+	and Facebook.
+	
+	NOTE
+	
+	This is a work in progress and currently has many unused and redundant variables that will be pared
+	down as work proceeds.
+	
+	Information about the Nuubz project and its development progress can be found at http://www.badlucksoft.com and http://www.nuubz.com .
+*/
+
+/**
+	\file
+	\brief Contains class OAuthBase
+	\class OAuthBase
+	\brief OAuth2 base class
+	
+	This class does most of the heavy lifting for OAuth2 communications; to communicate with a
+	service that does not already have an implementation, create a subclass of OAuthBase as the
+	starting point.
+	
+	\todo Everything.
 */
 abstract class OAuthBase
 {
@@ -118,7 +161,7 @@ abstract class OAuthBase
 	{
 		return $this->authorizeEndpoint;
 	}
-	protected function setAuthorizeRedirectURI($URL)
+	function setAuthorizeRedirectURI($URL)
 	{
 		$old = $this->authorizeRedirectURI;
 		$this->authorizeRedirectURI = $URL;
@@ -235,8 +278,6 @@ abstract class OAuthBase
 		$output = array();
 		foreach($params as $key => $value)
 			$output[] = $key . '=' . $value;
-		//echo $this->authorizeEndpoint . '?' . implode('&',$output) . "\n";
-//		unset($output);
 		unset($params);
 		return $this->authorizeEndpoint . '?' . implode('&',$output);
 	}
@@ -271,15 +312,14 @@ abstract class OAuthBase
 			//echo 'Authorization: Basic ' . $this->BasicAuth() . '<br>';
 		}
 		else
-{
-		if(! is_null($this->getClientID()) && ! is_null($this->getClientSecret()))
 		{
-			$vars['client_id'] =  $this->getClientID();
-			$vars['client_secret'] = $this->getClientSecret();
-			
+			if(! is_null($this->getClientID()) && ! is_null($this->getClientSecret()))
+			{
+				$vars['client_id'] =  $this->getClientID();
+				$vars['client_secret'] = $this->getClientSecret();
+				
+			}
 		}
-}
-		//preout($vars);
 		if( ! empty($headers) ) curl_setopt($c,CURLOPT_HTTPHEADER,$headers);
 		if( $this->checkAuthFlag(OAuthBase::AUTH_POST_FORM_ENCODED) )
 		{
@@ -287,7 +327,6 @@ abstract class OAuthBase
 			foreach($vars as $name => $value)
 				$pVars[] = $name . '=' . urlencode($value);
 			curl_setopt($c,CURLOPT_POSTFIELDS,implode('&',$pVars));
-			//echo 'post field set to ' . implode('&',$pVars) . '<br>'; 
 			unset($pVars);
 		}
 		else
@@ -298,7 +337,6 @@ abstract class OAuthBase
 		$httpResponseCode = curl_getinfo($c,CURLINFO_HTTP_CODE);
 		$headerText = substr($result,0,$headerSize);
 		$result = substr($result,$headerSize);
-//		echo $headerText . "\n";
 		$headers = explode("\n",$headerText);
 		unset($headerText);
 		$contentType = OAuthBase::getHeaderValue('Content-Type',$headers);
@@ -336,9 +374,10 @@ abstract class OAuthBase
 			else
 			{
 				echo $contentType;
-				preout($result);
+				print_r($result);
 			}
-		}else preout($result);
+		}
+		else print_r($result);
 		return $result;
 	}
 	static function generateCode()
@@ -416,206 +455,11 @@ abstract class OAuthBase
 	abstract protected function processResource($RESOURCE);
 }
 
-class OAuthGoogle extends OAuthBase
-{
-	function __construct()
-	{
-		parent::__construct();
-		parent::setServiceName('Google');
-		parent::setAuthorizeEndpoint('accounts.google.com/o/oauth2/v2/auth');
-		parent::setTokenEndpoint('www.googleapis.com/oauth2/v4/token');
-		$this->addResourceScope('https://www.googleapis.com/auth/userinfo.email');
-		$this->addResourceScope('https://www.googleapis.com/auth/userinfo.profile');
-		$this->setAuthorizeRedirectURI('dev.nuubz.com/oauthresponse');
-		$this->setAuthFlag(OAuthBase::AUTH_BASIC);
-		$this->setAuthFlag(OAuthBase::AUTH_POST_FORM_ENCODED);
-	}
-	protected function processAuthGrant($GRANT,$TYPE)
-	{
-		//preout($TYPE);
-		//preout($GRANT);
-		if( ! empty($GRANT) )
-		{
-			if( strcasecmp($TYPE,'application/json') == 0 )
-			{
-				try
-				{
-				$tokenData = json_decode($GRANT,true);
-				if( isset($tokenData['access_token']) ) $this->setAccessToken($tokenData['access_token']);
-				if( isset($tokenData['refresh_token']) ) $this->setRefreshToken($tokenData['refresh_token']);
-				if( isset($tokenData['expires_in']) ) $this->setAccessTokenExpiry(date('Y-m-d H:i:s',strtotime('+' . $tokenData['expires_in'] . ' seconds')));
-				//var_dump($tokenData);
-				if( ! is_null($this->getAccessToken()) ) echo 'successfully obtained access token!';
-				}
-				catch(Exception $e)
-				{
-					//echo $e->getMessage(). "\n";
-				}
-				//exit();
-			}
-		}
-	}
-	protected function processResource($RESOURCE)
-	{
-	}
-}
 
-class OAuthClef extends OAuthBase
-{
-	function __construct()
-	{
-		parent::__construct();
-		parent::setServiceName('Clef');
-		parent::setAuthServerURL('clef.io/api/v1/authorize');
-		parent::setResourceServerURL('clef.io/api/v1/info');
-	}
-	function processAuthGrant($GRANT,$TYPE)
-	{
-	}
-	function processResource($RESOURCE)
-	{
-	}
-}
 
-class OAuthPatreon extends OAuthBase
-{
-	function __construct()
-	{
-		parent::__construct();
-		parent::setServiceName('Patreon');
-		parent::setAuthorizeEndpoint('www.patreon.com/oauth2/authorize');
-		parent::setTokenEndpoint('api.patreon.com/oauth2/token');
-	}
-	protected function processAuthGrant($GRANT,$TYPE)
-	{
-	}
-	protected function processResource($RESOURCE)
-	{
-	}
-}
 
-class OAuthDisqus extends OAuthBase
-{
-	function __construct()
-	{
-		parent::__construct();
-		parent::setServiceName('Disqus');
-		parent::setAuthorizeEndpoint('disqus.com/api/oauth/2.0/authorize/');
-		parent::setTokenEndpoint('disqus.com/api/oauth/2.0/access_token/');
-	}
-	protected function processAuthGrant($GRANT,$TYPE)
-	{
-	}
-	protected function processResource($RESOURCE)
-	{
-	}
-}
 
-class OAuthFacebook extends OAuthBase
-{
-	function __construct()
-	{
-		parent::__construct();
-		parent::setServiceName('Facebook');
-		parent::setAuthorizeEndpoint('www.facebook.com/dialog/oauth');
-		parent::setTokenEndpoint('graph.facebook.com/v2.3/oauth/access_token');
-		parent::setResourceServerURL('somethingelseatfacebook');
-		$this->scopeSeparator = ',';
-		$this->addResourceScope('email');
-		$this->addResourceScope('public_profile');
-		$this->setAuthorizeRedirectURI('dev.nuubz.com/oauthresponse');
-	}
-	protected function processAuthGrant($GRANT,$TYPE)
-	{
-		if( strpos($TYPE,';') !== false) $TYPE = substr($TYPE,0,strpos($TYPE,';'));
-		if( ! empty($GRANT) )
-		{
-			if( strcasecmp($TYPE,'application/json') == 0 )
-			{
-				try
-				{
-				$tokenData = json_decode($GRANT,true);
-				if( isset($tokenData['access_token']) ) $this->setAccessToken($tokenData['access_token']);
-				if( isset($tokenData['refresh_token']) ) $this->setRefreshToken($tokenData['refresh_token']);
-				if( isset($tokenData['expires_in']) ) $this->setAccessTokenExpiry(date('Y-m-d H:i:s',strtotime('+' . $tokenData['expires_in'] . ' seconds')));
-				//preout($tokenData);
-				if( ! is_null($this->getAccessToken()) ) echo 'successfully obtained access token!';
-				}
-				catch(Exception $e)
-				{
-					//echo $e->getMessage(). "\n";
-				}
-				//exit();
-			}
-		}
-		$vars = array('client_id' => urlencode($this->getClientID()), 'client_secret' => urlencode($this->getClientSecret()),'redirect_uri' => urlencode('http' . ($this->getSSLTLS() ? 's':'') . '://' . $this->getAuthorizeRedirectURI()),'code' => null);
-		
-	}
-	protected function processResource($RESOURCE)
-	{
-	}
-}
 
-class OAuthTest extends OAuthBase
-{
-	function __construct($AUTHCODE = null, $REFRESH_TOKEN = null)
-	{
-		parent::__construct();
-		/*
-			Info for use with the test OAuth daemon installed on Aragorn's Fedora dev server and at oauthdev.nuubz.com
-			https://github.com/oauth-io/oauthd
-		*/
-		if( ! empty($AUTHCODE) ) $this->setAuthorizationCode($AUTHCODE);
-		$this->setServiceName('Test');
-		$this->setTokenEndpoint('localhost/oauth2/token.php');
-		$this->setAuthorizeEndpoint('localhost/oauth2/authorize.php');
-		$this->setAuthorizeRedirectURI('localhost/oauth2/postauth.php');
-		//$this->setResourceServerURL('term.ie/oauth/example/access_token.php');
-		$this->addResourceScope('first_name');
-		$this->addResourceScope('last_name');
-		$this->addResourceScope('username');
-		$this->setSSLTLS(false);
-		$this->setClientID('testclient');
-		$this->setClientSecret('testpass');
-		if( ! empty($REFRESH_TOKEN) )
-		{
-			$this->setRefreshToken($REFRESH_TOKEN);
-			$this->authenticate();
-		}
-		//$tokenData = $this->authenticate();
-	//	print_r($tokenData);
-	}
-	function getResource()
-	{
-		if( $this->getAccessTokenExpired()) $this->authenticate();
-	}
-	protected function processAuthGrant($GRANT,$TYPE)
-	{
-		echo "\t===\tprocessAuthGrant\t===\n";
-		if( ! empty($GRANT) )
-		{
-			if( strcasecmp($TYPE,'application/json') == 0 )
-			{
-				try
-				{
-				$tokenData = json_decode($GRANT,true);
-				if( isset($tokenData['access_token']) ) $this->setAccessToken($tokenData['access_token']);
-				if( isset($tokenData['refresh_token']) ) $this->setRefreshToken($tokenData['refresh_token']);
-				if( isset($tokenData['expires_in']) ) $this->setAccessTokenExpiry(date('Y-m-d H:i:s',strtotime('+' . $tokenData['expires_in'] . ' seconds')));
-				var_dump($tokenData);
-				}
-				catch(Exception $e)
-				{
-					echo $e->getMessage(). "\n";
-				}
-				//exit();
-			}
-		}
-	}
-	protected function processResource($RESOURCE)
-	{
-	}
-}
 class OAuthException extends Exception
 {
 	function __construct($MESSAGE = 'An OAuth exception occurred', $CODE = 0, $PREVIOUS = null)

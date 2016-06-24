@@ -24,6 +24,16 @@ SOFTWARE.
 */
 require_once 'oauth.class.php';
 
+/**
+	\file 
+	\brief Contains class OAuthFacebook
+	\class OAuthFacebook
+	\brief OAuth Facebook subclass
+	
+	This is the subclass that will handle Facebook OAuth2 communications.
+	
+	\todo Everything.
+*/
 class OAuthFacebook extends OAuthBase
 {
 	function __construct()
@@ -36,7 +46,6 @@ class OAuthFacebook extends OAuthBase
 		$this->scopeSeparator = ',';
 		$this->addResourceScope('email');
 		$this->addResourceScope('public_profile');
-		$this->setAuthorizeRedirectURI('yourdomainhere/oauthresponse');
 	}
 	protected function processAuthGrant($GRANT,$TYPE)
 	{
@@ -52,9 +61,11 @@ class OAuthFacebook extends OAuthBase
 					if( isset($tokenData['refresh_token']) ) $this->setRefreshToken($tokenData['refresh_token']);
 					if( isset($tokenData['expires_in']) ) $this->setAccessTokenExpiry(date('Y-m-d H:i:s',strtotime('+' . $tokenData['expires_in'] . ' seconds')));
 					if( ! is_null($this->getAccessToken()) ) echo 'successfully obtained access token!';
+					die('<br>end');
 				}
 				catch(Exception $e)
 				{
+					die($e->getMessage());
 				}
 			}
 		}

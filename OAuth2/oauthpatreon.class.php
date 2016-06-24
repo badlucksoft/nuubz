@@ -24,6 +24,17 @@ SOFTWARE.
 */
 require_once 'oauth.class.php';
 
+/**
+	\file
+	\brief Contains class OAuthPatreon
+	
+	\class OAuthPatreon
+	\brief OAuth Patreon subclass
+	
+	This is the subclass that will handle Patreon OAuth2 communications.
+	
+	\todo Everything.
+*/
 class OAuthPatreon extends OAuthBase
 {
 	function __construct()

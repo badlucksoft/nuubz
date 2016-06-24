@@ -24,6 +24,17 @@ SOFTWARE.
 */
 require_once 'oauth.class.php';
 
+/**
+	\file
+	\brief Contains class OAuthDisqus
+	
+	\class OAuthDisqus
+	\brief OAuth Disqus subclass
+	
+	This is the subclass that will handle Disqus OAuth2 communications.
+	
+	\todo Everything.
+*/
 class OAuthDisqus extends OAuthBase
 {
 	function __construct()
