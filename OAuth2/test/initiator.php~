@@ -1,0 +1,26 @@
+<?php
+ob_start();
+require_once 'oauth.class.php';
+if( isset($_COOKIE[session_name()]) )
+{
+	 session_destroy();
+	setcookie(session_name(),'nothing',strtotime('-1 day'),'/',ini_get('session.cookie_domain'));
+	header('Location: /oauthtest.php',true, 302);
+	exit();
+}
+session_start();
+$which = 'Google';
+$c = 'OAuth' . $which;
+$_SESSION['oauth_provider'] = new $c(); //OAuthFacebook();
+if( strcasecmp($which,'google') == 0)
+{
+	$_SESSION['oauth_provider']->setClientID('');
+	$_SESSION['oauth_provider']->setClientSecret('');
+}
+elseif( strcasecmp($which,'facebook') == 0)
+{
+	$_SESSION['oauth_provider']->setClientID('');
+	$_SESSION['oauth_provider']->setClientSecret('');
+	
+}
+header('Location: https://' . $_SESSION['oauth_provider']->authRedirectResourceOwner(),true,302);
