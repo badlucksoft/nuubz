@@ -553,6 +553,13 @@ class OAuthInvalidRequestException extends OAuthException
 		parent::__construct($MESSAGE,$CODE,$PREVIOUS);
 	}
 }
+/**
+	\class OAuthInvalidClientException
+	\brief Invalid Client Exception
+	
+	This exception is thrown when client authentication fails. This failure may be for a range of reasons
+	including the client is unknown, the authentication is missing, or the authentication method is unsupported.
+*/
 class OAuthInvalidClientException extends OAuthException
 {
 	function __construct($MESSAGE = 'OAuth exception; invalid client', $CODE = 0, $PREVIOUS = null)
@@ -560,6 +567,13 @@ class OAuthInvalidClientException extends OAuthException
 		parent::__construct($MESSAGE,$CODE,$PREVIOUS);
 	}
 }
+/**
+	\class OAuthUnauthorizedClientException
+	\brief Unauthorized Client Exception
+	
+	The authenticated client isn't authorized to use the attempted authorization
+	grant type.
+*/
 class OAuthUnauthorizedClientException extends OAuthException
 {
 	function __construct($MESSAGE = 'OAuth exception; unauthorized client', $CODE = 0, $PREVIOUS = null)
