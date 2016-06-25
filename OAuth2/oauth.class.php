@@ -74,19 +74,36 @@ abstract class OAuthBase
 		$this->scopeSeparator = ' ';
 		$this->user_id = null;
 		$this->user_first_name = null;
-		$this->user_last_name = null;
+		$this->user_last_ame = null;
 		$this->user_email = null;
 	}
+	/**
+		\brief Turn SSL/TLS usage on or off.
+		
+		This function sets the internal variable that controls whether SSL/TLS is used when
+		communicating with the service provider. Usually, this will need to be set to true,
+		which is its default value.
+	*/
 	protected function setSSLTLS($USE)
 	{
 		$old = $this->useSSLTLS;
 		$this->useSSLTLS = $USE;
 		return $old;
 	}
+	/**
+		\brief Returns the current status of whether service is configured to use SSL/TLS.
+	*/
 	function getSSLTLS()
 	{
 		return $this->useSSLTLS;
 	}
+	/**
+		\brief Sets the service provider specific client identifier.
+		
+		\param $CLIENT_ID Service provided identifier string.
+		
+		This function sets the OAuth2 service provider's client identifier for your site.
+	*/
 	function setClientID($CLIENT_ID)
 	{
 		$oldCID = $this->client_id;
@@ -97,6 +114,14 @@ abstract class OAuthBase
 	{
 		return $this->client_id;
 	}
+	/**
+		\brief Sets service provider specific client secret value.
+		
+		\param $CLIENT_SECRET Secret identifier value provided by service provider.
+		
+		This function sets the service provider's secret identifier value that is used to confirm
+		authenticity of your communications.
+	*/
 	function setClientSecret($CLIENT_SECRET)
 	{
 		$oldSecret = $this->client_secret;
@@ -141,6 +166,15 @@ abstract class OAuthBase
 	{
 		return $this->serviceName;
 	}
+	/**
+		\brief Sets the token endpoint for the service provider.
+		
+		This function sets the token endpoint for the provider; this endpoint provides the token
+		that is used to retrieve the user data as part of the protocol. This function should
+		not normally be called or used by the website functionality directly; a service specific
+		subclass should call this function as part of their constructor. (Thus the function is
+		protected instead of public.)
+	*/
 	protected function setTokenEndpoint($URL)
 	{
 		$oldURL = $this->tokenEndpoint;
@@ -151,6 +185,16 @@ abstract class OAuthBase
 	{
 		return $this->tokenEndpoint;
 	}
+	/**
+		\brief Sets the service authorization endpoint. 
+		
+		This function sets the service specific authorization endpoint which is the first step
+		in the OAuth2 process; this is the URL to which the user's web client is redirected as
+		part of the authentication/authorization process.  This function should
+		not normally be called or used by the website functionality directly; a service specific
+		subclass should call this function as part of their constructor. (Thus the function is
+		protected instead of public.)
+	*/
 	protected function setAuthorizeEndpoint($URL)
 	{
 		$old = $this->authorizeEndpoint;
@@ -231,6 +275,9 @@ abstract class OAuthBase
 		else $expired =false; // assume the token is valid if we have no expiry.
 		return true;
 	}
+	/**
+		\brief Compares the authorization state value received to the one already set.
+	*/
 	function verifyAuthorizationState($STATE)
 	{
 		$matches = false;
@@ -253,6 +300,17 @@ abstract class OAuthBase
 		if( isset($this->resourceScopes) && is_array($this->resourceScopes) && count($this->resourceScopes) > 0 ) $hasScopes = true;
 		return $hasScopes;
 	}
+	/**
+		\brief Adds a resource scope.
+		
+		\param $SCOPE Service specific resource scope string.
+		
+		This function adds the passed in resource scope string to an internal array that is passed
+		to the remote service provider. The string is only added if it does not already exist in the
+		array. The resource scope(s) is(are) the user data you wish to receive from the service provider.
+		
+		\return int The number of scopes currently set for requests.
+	*/
 	function addResourceScope($SCOPE)
 	{
 		if( ! in_array($SCOPE,$this->resourceScopes) ) $this->resourceScopes[] = $SCOPE;
@@ -455,11 +513,14 @@ abstract class OAuthBase
 	abstract protected function processResource($RESOURCE);
 }
 
-
-
-
-
-
+/**
+	\class OAuthException
+	\brief Base class for general and specific OAuth exceptions.
+	
+	The OAuthException base class acts as both a general exception that may be thrown by this system
+	as well as a catch-all for all subclasses. This will allow you to distinguish between various
+	OAuth exceptions and exceptions from other errors.
+*/
 class OAuthException extends Exception
 {
 	function __construct($MESSAGE = 'An OAuth exception occurred', $CODE = 0, $PREVIOUS = null)
@@ -467,6 +528,13 @@ class OAuthException extends Exception
 		parent::__construct($MESSAGE,$CODE,$PREVIOUS);
 	}
 }
+/**
+	\class OAuthInvalidGrantException
+	\brief Invalid Grant Exception
+	
+	The authorization grant sent to the remote service was considered invalid. It's possible the refresh
+	token (if provided or available) may need to be submitted to obtain a new authorization grant.
+*/
 class OAuthInvalidGrantException extends OAuthException
 {
 	function __construct($MESSAGE = 'OAuth exception; invalid grant', $CODE = 0, $PREVIOUS = null)
@@ -474,6 +542,10 @@ class OAuthInvalidGrantException extends OAuthException
 		parent::__construct($MESSAGE,$CODE,$PREVIOUS);
 	}
 }
+/**
+	\class OAuthInvalidRequestException
+	\brief Invalid Request Exception
+*/
 class OAuthInvalidRequestException extends OAuthException
 {
 	function __construct($MESSAGE = 'OAuth exception; invalid request', $CODE = 0, $PREVIOUS = null)

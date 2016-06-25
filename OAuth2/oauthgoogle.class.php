@@ -29,7 +29,7 @@ require_once 'oauth.class.php';
 	\brief Contains class OAuthGoogle
 	
 	\class OAuthGoogle
-	\brief OAuth Google subclass
+	\brief Google subclass
 	
 	This is the subclass that will handle Google OAuth2 communications.
 	

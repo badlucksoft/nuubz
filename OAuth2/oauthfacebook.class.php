@@ -28,7 +28,7 @@ require_once 'oauth.class.php';
 	\file 
 	\brief Contains class OAuthFacebook
 	\class OAuthFacebook
-	\brief OAuth Facebook subclass
+	\brief Facebook subclass
 	
 	This is the subclass that will handle Facebook OAuth2 communications.
 	

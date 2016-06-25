@@ -29,7 +29,7 @@ require_once 'oauth.class.php';
 	\brief Contains class OAuthDisqus
 	
 	\class OAuthDisqus
-	\brief OAuth Disqus subclass
+	\brief Disqus subclass
 	
 	This is the subclass that will handle Disqus OAuth2 communications.
 	

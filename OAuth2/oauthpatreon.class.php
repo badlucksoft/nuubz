@@ -29,7 +29,7 @@ require_once 'oauth.class.php';
 	\brief Contains class OAuthPatreon
 	
 	\class OAuthPatreon
-	\brief OAuth Patreon subclass
+	\brief Patreon subclass
 	
 	This is the subclass that will handle Patreon OAuth2 communications.
 	
