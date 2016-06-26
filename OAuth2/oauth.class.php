@@ -509,7 +509,21 @@ abstract class OAuthBase
 			);
 	}
 	*/
+	/**
+		\brief Process authorization grant
+		
+		Process the received authorization grant type. As some authorization grants are done in XML and others in JSON
+		the MIME type received from the server is passed along.
+		
+		\param $GRANT A string containing the authorization grant data.
+		\param $TYPE MIME type of the received data.
+	*/
 	abstract protected function processAuthGrant($GRANT,$TYPE);
+	/**
+		\brief Process resource response
+		
+		Process the resource response received by the server. This is to be handled in subclasses only, as it service specific.
+	*/
 	abstract protected function processResource($RESOURCE);
 }
 
@@ -581,6 +595,12 @@ class OAuthUnauthorizedClientException extends OAuthException
 		parent::__construct($MESSAGE,$CODE,$PREVIOUS);
 	}
 }
+/**
+	\class OAuthUnsupportedGrantTypeException
+	\brief Unsupported Grant Type
+	
+	The authorization server doesn't support the requested grant type. 
+*/
 class OAuthUnsupportedGrantTypeException extends OAuthException
 {
 	function __construct($MESSAGE = 'OAuth exception; unsupported grant type', $CODE = 0, $PREVIOUS = null)
@@ -588,6 +608,12 @@ class OAuthUnsupportedGrantTypeException extends OAuthException
 		parent::__construct($MESSAGE,$CODE,$PREVIOUS);
 	}
 }
+/**
+	\class OAuthInvalidScopeException
+	\brief Invalid Scope Exception
+	
+	The requested scope or scopes is/are invalid, malformed, or unrecognized.
+*/
 class OAuthInvalidScopeException extends OAuthException
 {
 	function __construct($MESSAGE = 'OAuth exception; invalid scope', $CODE = 0, $PREVIOUS = null)
