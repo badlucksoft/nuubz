@@ -57,7 +57,7 @@ abstract class OAuthBase
 	
 	protected $serviceName, $tokenEndpoint, $authorizeEndpoint,$authorizeRedirectURI, $authStateValue, $authServerURL, $resourceServerURL, $accessToken, $accessTokenExpiry,$refreshToken, $authorizationCode,
 			$client_id,$client_secret,$resourceScopes,$scopeSeparator,$state,$redirectURI, $useSSLTLS, $clientAuthentication,
-			$user_id,$user_first_name, $user_last_name, $user_email;
+			$user_id,$user_first_name, $user_last_name, $user_email, $transmissionHeaders;
 	function __construct()
 	{
 		$this->serviceName = null;
@@ -77,6 +77,7 @@ abstract class OAuthBase
 		$this->user_first_name = null;
 		$this->user_last_ame = null;
 		$this->user_email = null;
+		$this->transmissionHeaders = array();
 	}
 	/**
 		\brief Turn SSL/TLS usage on or off.
@@ -344,6 +345,15 @@ abstract class OAuthBase
 	{
 		return 'Nuubz OAuth (' . $this->getServiceName() . ')';
 	}
+	function addHeader($HEADER,$CONTENT)
+	{
+		if( is_null($this->transmissionHeaders) ) $this->transmissionHeaders = array();
+		$this->transmissionHeaders[$HEADER] = $CONTENT;
+	}
+	function removeHeader($HEADER)
+	{
+		if( isset($this->transmissionHeaders[$HEADER]) && ! empty($this->transmissionHeaders[$HEADER])) unset($this->transmissionHeaders[$HEADER]);
+	}
 	function authenticate()
 	{
 		$c = curl_init('http' . ($this->getSSLTLS() ? 's':'') . '://' . $this->getTokenEndpoint());
@@ -364,6 +374,13 @@ abstract class OAuthBase
 		{
 			$vars['code'] = $this->getAuthorizationCode();
 
+		}
+		if( ! empty($this->transmissionHeaders) && count($this->transmissionHeaders) > 0)
+		{
+			foreach($this->transmissionHeaders as $h => $v)
+			{
+				if( ! empty($h) && ! empty($v) ) $headers[] = $h . ': ' . $v;
+			}
 		}
 		if( $this->checkAuthFlag(OAuthBase::AUTH_CLIENT_ID_IN_HEADER) && ! is_null($this->getClientID())) 
 		{
