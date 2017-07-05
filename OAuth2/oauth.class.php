@@ -53,6 +53,7 @@ abstract class OAuthBase
 {
 	const AUTH_BASIC = 0x00000001;
 	const AUTH_POST_FORM_ENCODED = 0x00000002;
+	const AUTH_CLIENT_ID_IN_HEADER = 0x00000004;
 	
 	protected $serviceName, $tokenEndpoint, $authorizeEndpoint,$authorizeRedirectURI, $authStateValue, $authServerURL, $resourceServerURL, $accessToken, $accessTokenExpiry,$refreshToken, $authorizationCode,
 			$client_id,$client_secret,$resourceScopes,$scopeSeparator,$state,$redirectURI, $useSSLTLS, $clientAuthentication,
@@ -363,6 +364,10 @@ abstract class OAuthBase
 		{
 			$vars['code'] = $this->getAuthorizationCode();
 
+		}
+		if( $this->checkAuthFlag(OAuthBase::AUTH_CLIENT_ID_IN_HEADER) && ! is_null($this->getClientID())) 
+		{
+			$headers[] = 'Client-ID: ' . $this->getClientID();
 		}
 		if( $this->checkAuthFlag(OAuthBase::AUTH_BASIC) && ! is_null($this->getClientID()) && ! is_null($this->getClientSecret()))
 		{
