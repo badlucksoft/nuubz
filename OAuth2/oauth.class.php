@@ -382,7 +382,7 @@ abstract class OAuthBase
 				if( ! empty($h) && ! empty($v) ) $headers[] = $h . ': ' . $v;
 			}
 		}
-		if( $this->checkAuthFlag(OAuthBase::AUTH_CLIENT_ID_IN_HEADER) && ! is_null($this->getClientID())) 
+		if( $this->checkAuthFlag(OAuthBase::AUTH_CLIENT_ID_IN_HEADER) && ! is_null($this->getClientID()) && ! isset($this->transmissionHeaders['Client-ID'])) 
 		{
 			$headers[] = 'Client-ID: ' . $this->getClientID();
 		}
