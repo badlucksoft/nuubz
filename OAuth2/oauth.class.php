@@ -359,6 +359,8 @@ abstract class OAuthBase
 		$c = curl_init('http' . ($this->getSSLTLS() ? 's':'') . '://' . $this->getTokenEndpoint());
 		curl_setopt($c,CURLOPT_USERAGENT,$this->getUserAgentString());
 		curl_setopt($c,CURLOPT_POST,true);
+		curl_setopt($c,CURLOPT_SSL_VERSION,CURL_SSLVERSION_TLSv1_2);
+		curl_setopt($c,CURLOPT_SSL_VERIFYHOST,2);
 		curl_setopt($c,CURLOPT_RETURNTRANSFER,true);
 		$headers = array();
 		$vars = array(
@@ -413,6 +415,11 @@ abstract class OAuthBase
 			curl_setopt($c,CURLOPT_POSTFIELDS,$vars);
 		curl_setopt($c,CURLOPT_HEADER,true);
 		$result = curl_exec($c);
+		if( $result === false)
+		{
+			$ce = curl_errno($c);
+			throw new OAuthCURLException("OAuthClass: A CURL error has occurred: " . curl_error($c), $ce);
+		}
 		$headerSize = curl_getinfo($c,CURLINFO_HEADER_SIZE);
 		$httpResponseCode = curl_getinfo($c,CURLINFO_HTTP_CODE);
 		$headerText = substr($result,0,$headerSize);
@@ -560,6 +567,13 @@ abstract class OAuthBase
 class OAuthException extends Exception
 {
 	function __construct($MESSAGE = 'An OAuth exception occurred', $CODE = 0, $PREVIOUS = null)
+	{
+		parent::__construct($MESSAGE,$CODE,$PREVIOUS);
+	}
+}
+class OAuthCURLExcepiton extends OAuthException
+{
+	function __construct($MESSAGE = 'An error within CURL occurred', $CODE = 0, $PREVIOUS = null)
 	{
 		parent::__construct($MESSAGE,$CODE,$PREVIOUS);
 	}
