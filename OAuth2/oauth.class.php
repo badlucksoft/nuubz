@@ -363,8 +363,8 @@ abstract class OAuthBase
 		curl_setopt($c,CURLOPT_POST,true);
 		if( $this->getSSLTLS() )
 		{
-			if( defined('CURL_SSLVERSION_TLSv1_2') ) curl_setopt($c,CURLOPT_SSL_VERSION,CURL_SSLVERSION_TLSv1_2);
-			elseif( defined('CURL_SSLVERSION_TLSv1_1') ) curl_setopt($c,CURLOPT_SSL_VERSION,CURL_SSLVERSION_TLSv1_1);
+			if( defined('CURL_SSLVERSION_TLSv1_2') ) curl_setopt($c,CURLOPT_SSLVERSION,CURL_SSLVERSION_TLSv1_2);
+			elseif( defined('CURL_SSLVERSION_TLSv1_1') ) curl_setopt($c,CURLOPT_SSLVERSION,CURL_SSLVERSION_TLSv1_1);
 			curl_setopt($c,CURLOPT_SSL_VERIFYHOST,2);
 			if(version_compare(PHP_VERSION,'7.0.7','>=') && defined('CURL_SSL_VERIFYSTATUS')) curl_setopt($c,CURL_SSL_VERIFYSTATUS,true);
 		}
