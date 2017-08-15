@@ -331,7 +331,7 @@ abstract class OAuthBase
 		if(function_exists('openssl_random_pseudo_bytes') ) $this->authStateValue = sha1(openssl_random_pseudo_bytes(1024));
 		else $this->authStateValue = OAuthBase::generateCode();
 		$params['state'] = $this->authStateValue;
-		if( ! is_null($this->getAuthorizeRedirectURI()) ) $params['redirect_uri'] = urlencode('http' . ($this->getSSLTLS() ? 's':'') . '://' . $this->getAuthorizeRedirectURI());
+		if( ! is_null($this->getAuthorizeRedirectURI()) ) $params['redirect_uri'] = 'http' . ($this->getSSLTLS() ? 's':'') . '://' . $this->getAuthorizeRedirectURI();
 		if( $this->hasScopesSpecified() )
 		{
 			$scopes = $this->getResourceScopes();
@@ -363,9 +363,10 @@ abstract class OAuthBase
 		curl_setopt($c,CURLOPT_POST,true);
 		if( $this->getSSLTLS() )
 		{
-			curl_setopt($c,CURLOPT_SSL_VERSION,CURL_SSLVERSION_TLSv1_2);
+			if( defined('CURL_SSLVERSION_TLSv1_2') ) curl_setopt($c,CURLOPT_SSL_VERSION,CURL_SSLVERSION_TLSv1_2);
+			elseif( defined('CURL_SSLVERSION_TLSv1_1') ) curl_setopt($c,CURLOPT_SSL_VERSION,CURL_SSLVERSION_TLSv1_1);
 			curl_setopt($c,CURLOPT_SSL_VERIFYHOST,2);
-			if(version_compare(PHP_VERSION,'7.0.7','>=')) curl_setopt($c,CURL_SSL_VERIFYSTATUS,true);
+			if(version_compare(PHP_VERSION,'7.0.7','>=') && defined('CURL_SSL_VERIFYSTATUS')) curl_setopt($c,CURL_SSL_VERIFYSTATUS,true);
 		}
 		curl_setopt($c,CURLOPT_RETURNTRANSFER,true);
 		$headers = array();
