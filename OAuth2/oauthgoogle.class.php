@@ -46,6 +46,7 @@ class OAuthGoogle extends OAuthBase
 		parent::setTokenEndpoint('www.googleapis.com/oauth2/v4/token');
 		$this->addResourceScope('https://www.googleapis.com/auth/userinfo.email');
 		$this->addResourceScope('https://www.googleapis.com/auth/userinfo.profile');
+		$this->setSSLTLS(true);
 		$this->setAuthFlag(OAuthBase::AUTH_BASIC);
 		$this->setAuthFlag(OAuthBase::AUTH_POST_FORM_ENCODED);
 	}
@@ -58,6 +59,10 @@ class OAuthGoogle extends OAuthBase
 				try
 				{
 					$tokenData = json_decode($GRANT,true);
+					if( isset($tokenData['token_type']) && strcasecmp('bearer',$tokenData['token_type']) == 0) 
+					{
+						$this->setAuthFlag(OAuthBase::AUTH_BEARER);
+					}
 					if( isset($tokenData['access_token']) ) $this->setAccessToken($tokenData['access_token']);
 					if( isset($tokenData['refresh_token']) ) $this->setRefreshToken($tokenData['refresh_token']);
 					if( isset($tokenData['expires_in']) ) $this->setAccessTokenExpiry(date('Y-m-d H:i:s',strtotime('+' . $tokenData['expires_in'] . ' seconds')));
@@ -70,6 +75,7 @@ class OAuthGoogle extends OAuthBase
 				}
 			}
 		}
+		$vars = array('client_id' => urlencode($this->getClientID()), 'client_secret' => urlencode($this->getClientSecret()),'redirect_uri' => urlencode('http' . ($this->getSSLTLS() ? 's':'') . '://' . $this->getAuthorizeRedirectURI()),'code' => null);
 	}
 	protected function processResource($RESOURCE)
 	{

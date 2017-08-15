@@ -54,6 +54,7 @@ abstract class OAuthBase
 	const AUTH_BASIC = 0x00000001;
 	const AUTH_POST_FORM_ENCODED = 0x00000002;
 	const AUTH_CLIENT_ID_IN_HEADER = 0x00000004;
+	const AUTH_BEARER = 0x00000008;
 	
 	protected $serviceName, $tokenEndpoint, $authorizeEndpoint,$authorizeRedirectURI, $authStateValue, $authServerURL, $resourceServerURL, $accessToken, $accessTokenExpiry,$refreshToken, $authorizationCode,
 			$client_id,$client_secret,$resourceScopes,$scopeSeparator,$state,$redirectURI, $useSSLTLS, $clientAuthentication,
@@ -327,17 +328,18 @@ abstract class OAuthBase
 		$params = array();
 		$params['client_id'] = urlencode($this->getClientID());
 		$params['response_type'] = 'code';
-		$this->authStateValue = OAuthBase::generateCode();
-		$params['state'] = urlencode($this->authStateValue);
+		if(function_exists('openssl_random_pseudo_bytes') ) $this->authStateValue = sha1(openssl_random_pseudo_bytes(1024));
+		else $this->authStateValue = OAuthBase::generateCode();
+		$params['state'] = $this->authStateValue;
 		if( ! is_null($this->getAuthorizeRedirectURI()) ) $params['redirect_uri'] = urlencode('http' . ($this->getSSLTLS() ? 's':'') . '://' . $this->getAuthorizeRedirectURI());
 		if( $this->hasScopesSpecified() )
 		{
 			$scopes = $this->getResourceScopes();
-			$params['scope'] = urlencode(implode($this->scopeSeparator,$scopes));
+			$params['scope'] = implode($this->scopeSeparator,$scopes);
 		}
 		$output = array();
 		foreach($params as $key => $value)
-			$output[] = $key . '=' . $value;
+			$output[] = $key . '=' . urlencode($value);
 		unset($params);
 		return $this->authorizeEndpoint . '?' . implode('&',$output);
 	}
@@ -359,8 +361,12 @@ abstract class OAuthBase
 		$c = curl_init('http' . ($this->getSSLTLS() ? 's':'') . '://' . $this->getTokenEndpoint());
 		curl_setopt($c,CURLOPT_USERAGENT,$this->getUserAgentString());
 		curl_setopt($c,CURLOPT_POST,true);
-		curl_setopt($c,CURLOPT_SSL_VERSION,CURL_SSLVERSION_TLSv1_2);
-		curl_setopt($c,CURLOPT_SSL_VERIFYHOST,2);
+		if( $this->getSSLTLS() )
+		{
+			curl_setopt($c,CURLOPT_SSL_VERSION,CURL_SSLVERSION_TLSv1_2);
+			curl_setopt($c,CURLOPT_SSL_VERIFYHOST,2);
+			if(version_compare(PHP_VERSION,'7.0.7','>=')) curl_setopt($c,CURL_SSL_VERIFYSTATUS,true);
+		}
 		curl_setopt($c,CURLOPT_RETURNTRANSFER,true);
 		$headers = array();
 		$vars = array(
@@ -467,14 +473,14 @@ abstract class OAuthBase
 		else print_r($result);
 		return $result;
 	}
-	static function generateCode()
+	static function generateCode($LENGTH = 32)
 	{
 		$pool = str_split('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._',1);
 		$code = '';
 		$randFunc = 'mt_rand';
 		$poolSize = count($pool);
 		if(version_compare(PHP_VERSION,'7.0.0', '>=') ) $randFunc = 'random_int';
-		for( $i = 0; $i < 32; $i++)
+		for( $i = 0; $i < $LENGTH; $i++)
 		{
 			shuffle($pool);
 			$code .= $pool[$randFunc(0,$poolSize-1)];
