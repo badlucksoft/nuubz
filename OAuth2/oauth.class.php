@@ -58,7 +58,7 @@ abstract class OAuthBase
 	
 	protected $serviceName, $tokenEndpoint, $authorizeEndpoint,$authorizeRedirectURI, $authStateValue, $authServerURL, $resourceServerURL, $accessToken, $accessTokenExpiry,$refreshToken, $authorizationCode,
 			$client_id,$client_secret,$resourceScopes,$scopeSeparator,$state,$redirectURI, $useSSLTLS, $clientAuthentication,
-			$user_id,$user_first_name, $user_last_name, $user_email, $transmissionHeaders;
+			$user_id,$user_first_name, $user_last_name, $user_email, $transmissionHeaders, $userinfoEndpoint, $revocationEndpoint, $jwksURI;
 	function __construct()
 	{
 		$this->serviceName = null;
@@ -76,8 +76,10 @@ abstract class OAuthBase
 		$this->scopeSeparator = ' ';
 		$this->user_id = null;
 		$this->user_first_name = null;
-		$this->user_last_ame = null;
+		$this->user_last_name = null;
 		$this->user_email = null;
+		$this->userinfoEndpoint = null;
+		$this->revocationEndpoint = null;
 		$this->transmissionHeaders = array();
 	}
 	/**
@@ -181,7 +183,7 @@ abstract class OAuthBase
 	protected function setTokenEndpoint($URL)
 	{
 		$oldURL = $this->tokenEndpoint;
-		$this->tokenEndpoint = $URL;
+		$this->tokenEndpoint = OAuthBase::stripProtocol($URL);
 		return $oldURL;
 	}
 	function getTokenEndpoint()
@@ -201,17 +203,47 @@ abstract class OAuthBase
 	protected function setAuthorizeEndpoint($URL)
 	{
 		$old = $this->authorizeEndpoint;
-		$this->authorizeEndpoint = $URL;
+		$this->authorizeEndpoint = OAuthBase::stripProtocol($URL);
 		return $old;
 	}
-	function getAuthorizeEndpoint()
+	/**
+		\brief Returns the Authorization endpoint.
+	*/
+	protected function getAuthorizeEndpoint()
 	{
 		return $this->authorizeEndpoint;
+	}
+	/**
+		\brief Sets the revocation endpoint
+	*/
+	function setRevocationEndpoint($URL)
+	{
+		$old = $this->revocationEndpoint;
+		$this->revocationEndpoint = OAuthBase::stripProtocol($URL);
+		return $old;
+	}
+	/**
+		\brief Returns the revocation endpoint.
+	*/
+	function getRevocationEndpoint()
+	{
+		return $this->revocationEndpoint;
+	}
+	protected function setUserInfoEndpoint($URL)
+	{
+		echo "<br>setting userinfo endpoint to {$URL}<br>";
+		$old = $this->userinfoEndpoint;
+		$this->userinfoEndpoint = OAuthBase::stripProtocol($URL);
+		return $old;
+	}
+	function getUserInfoEndpoint()
+	{
+		return $this->userinfoEndpoint;
 	}
 	function setAuthorizeRedirectURI($URL)
 	{
 		$old = $this->authorizeRedirectURI;
-		$this->authorizeRedirectURI = $URL;
+		$this->authorizeRedirectURI = OAuthBase::stripProtocol($URL);
 		return $old;
 	}
 	function getAuthorizeRedirectURI()
@@ -221,7 +253,7 @@ abstract class OAuthBase
 	protected function setAuthServerURL($URL)
 	{
 		$oldURL = $this->authServerURL;
-		$this->authServerURL = $URL;
+		$this->authServerURL = OAuthBase::stripProtocol($URL);
 		return $oldURL;
 	}
 	function getAuthServerURL()
@@ -231,7 +263,7 @@ abstract class OAuthBase
 	protected function setResourceServerURL($URL)
 	{
 		$oldURL = $this->resourceServerURL;
-		$this->resourceServerURL = $URL;
+		$this->resourceServerURL = OAuthBase::stripProtocol($URL);
 		return $oldURL;
 	}
 	function getResourceServerURL()
@@ -278,13 +310,20 @@ abstract class OAuthBase
 		else $expired =false; // assume the token is valid if we have no expiry.
 		return true;
 	}
+	protected static function stripProtocol($URL)
+	{
+		$match = null;
+		if( preg_match('#^http(s)?\:\/\/(.*)$#i',$URL, $match) > 0)
+			return $match[2];
+		return $URL;
+	}
 	/**
 		\brief Compares the authorization state value received to the one already set.
 	*/
 	function verifyAuthorizationState($STATE)
 	{
 		$matches = false;
-		if( strcmp($this->authStateValue,$STATE) == 0 ) $matches = true;
+		if( strcmp(hash('sha512',$this->serviceName . ':' . $this->authStateValue),$STATE) == 0 ) $matches = true;
 		return $matches;
 	}
 	function setAuthorizationCode($CODE) // also known as authorization grant
@@ -328,9 +367,10 @@ abstract class OAuthBase
 		$params = array();
 		$params['client_id'] = urlencode($this->getClientID());
 		$params['response_type'] = 'code';
-		if(function_exists('openssl_random_pseudo_bytes') ) $this->authStateValue = sha1(openssl_random_pseudo_bytes(1024));
-		else $this->authStateValue = OAuthBase::generateCode();
-		$params['state'] = $this->authStateValue;
+		$authStateLength = 1024;
+		if(function_exists('openssl_random_pseudo_bytes') ) $this->authStateValue = sha1(openssl_random_pseudo_bytes($authStateLength));
+		else $this->authStateValue = OAuthBase::generateCode($authStateLength);
+		$params['state'] = hash('sha512',$this->serviceName . ':' . $this->authStateValue);
 		if( ! is_null($this->getAuthorizeRedirectURI()) ) $params['redirect_uri'] = 'http' . ($this->getSSLTLS() ? 's':'') . '://' . $this->getAuthorizeRedirectURI();
 		if( $this->hasScopesSpecified() )
 		{
@@ -507,6 +547,22 @@ abstract class OAuthBase
 		}
 		return $value;
 	}
+	function __debugInfo()
+	{
+		return array(
+			'client_id' => $this->client_id,
+			'tokenEndpoint' => $this->tokenEndpoint,
+			'userinfoEndpoint' => $this->userinfoEndpoint,
+			'authorizeEndpoint' => $this->authorizeEndpoint,
+			'authorizeRedirectURI' => $this->authorizeRedirectURI,
+			'scopeSeparator' => $this->scopeSeparator,
+			'resourceScopes' => $this->resourceScopes,
+			'redirectURI' => $this->redirectURI,
+			'useSSLTLS' => $this->useSSLTLS,
+			'accessToken' => (empty($this->accessToken) ? 'Not Found':'Found'),
+			'refreshToken' => (empty($this->refreshToken) ? 'Not Found':'Found')
+		);
+	}
 	function __sleep()
 	{
 		return array('serviceName', 
@@ -527,7 +583,14 @@ abstract class OAuthBase
 			'state',
 			'redirectURI',
 			'useSSLTLS',
-			'clientAuthentication');
+			'clientAuthentication',
+			'userinfoEndpoint',
+			'revocationEndpoint',
+			'transmissionHeaders',
+			'user_id',
+			'user_first_name',
+			'user_last_name',
+			'user_email');
 	}
 	function __wakeup()
 	{
@@ -561,6 +624,10 @@ abstract class OAuthBase
 		Process the resource response received by the server. This is to be handled in subclasses only, as it service specific.
 	*/
 	abstract protected function processResource($RESOURCE);
+	/**
+		\brief Retrieve user data from remote source.
+	*/
+	abstract function retrieveUserData();
 }
 
 /**

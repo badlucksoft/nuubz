@@ -42,8 +42,17 @@ class OAuthGoogle extends OAuthBase
 	{
 		parent::__construct();
 		parent::setServiceName('Google');
-		parent::setAuthorizeEndpoint('accounts.google.com/o/oauth2/v2/auth');
-		parent::setTokenEndpoint('www.googleapis.com/oauth2/v4/token');
+		$c = curl_init('https://accounts.google.com/.well-known/openid-configuration');
+		curl_setopt($c,CURLOPT_USERAGENT,$this->getUserAgentString());
+		curl_setopt($c,CURLOPT_RETURNTRANSFER,true);
+		$discoveryDoc = curl_exec($c);
+		$disc = json_decode($discoveryDoc,true);
+		curl_close($c);
+		unset($discoveryDoc);
+		parent::setAuthorizeEndpoint($disc['authorization_endpoint']);
+		parent::setTokenEndpoint($disc['token_endpoint']);
+		parent::setUserInfoEndpoint($disc['userinfo_endpoint']);
+		parent::setRevocationEndpoint($disc['revocation_endpoint']);
 		$this->addResourceScope('https://www.googleapis.com/auth/userinfo.email');
 		$this->addResourceScope('https://www.googleapis.com/auth/userinfo.profile');
 		$this->setSSLTLS(true);
@@ -66,8 +75,7 @@ class OAuthGoogle extends OAuthBase
 					if( isset($tokenData['access_token']) ) $this->setAccessToken($tokenData['access_token']);
 					if( isset($tokenData['refresh_token']) ) $this->setRefreshToken($tokenData['refresh_token']);
 					if( isset($tokenData['expires_in']) ) $this->setAccessTokenExpiry(date('Y-m-d H:i:s',strtotime('+' . $tokenData['expires_in'] . ' seconds')));
-					if( ! is_null($this->getAccessToken()) ) echo 'successfully obtained access token!';
-					die('<br>end');
+					$this->retrieveUserData();
 				}
 				catch(Exception $e)
 				{
@@ -75,9 +83,30 @@ class OAuthGoogle extends OAuthBase
 				}
 			}
 		}
-		$vars = array('client_id' => urlencode($this->getClientID()), 'client_secret' => urlencode($this->getClientSecret()),'redirect_uri' => urlencode('http' . ($this->getSSLTLS() ? 's':'') . '://' . $this->getAuthorizeRedirectURI()),'code' => null);
 	}
 	protected function processResource($RESOURCE)
 	{
+	}
+	function retrieveUserData()
+	{
+		$c = curl_init('http' . ($this->getSSLTLS() ? 's':'') . '://' . $this->getUserInfoEndpoint());
+		curl_setopt($c,CURLOPT_USERAGENT,$this->getUserAgentString());
+		if( $this->getSSLTLS() )
+		{
+			if( defined('CURL_SSLVERSION_TLSv1_2') ) curl_setopt($c,CURLOPT_SSLVERSION,CURL_SSLVERSION_TLSv1_2);
+			elseif( defined('CURL_SSLVERSION_TLSv1_1') ) curl_setopt($c,CURLOPT_SSLVERSION,CURL_SSLVERSION_TLSv1_1);
+			curl_setopt($c,CURLOPT_SSL_VERIFYHOST,2);
+			if(version_compare(PHP_VERSION,'7.0.7','>=') && defined('CURL_SSL_VERIFYSTATUS')) curl_setopt($c,CURL_SSL_VERIFYSTATUS,true);
+		}
+		curl_setopt($c,CURLOPT_RETURNTRANSFER,true);
+		$param = array();
+		$headers = array();
+		if( $this->checkAuthFlag(OAuthBase::AUTH_BEARER) && is_null($this->getAccessToken()) === false )
+		{
+			$headers[] = 'Authorization: Bearer ' . $this->getAccessToken();
+		}
+		if( ! empty($headers) ) curl_setopt($c,CURLOPT_HTTPHEADER,$headers);
+		$data = curl_exec($c);
+		curl_close($c);
 	}
 }

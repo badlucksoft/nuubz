@@ -42,7 +42,9 @@ class OAuthTwitch extends OAuthBase
 	function __construct()
 	{
 		parent::__construct();
+		
 		parent::setServiceName('Twitch');
+		$this->setAuthFlag(OAuthBase::AUTH_CLIENT_ID_IN_HEADER);
 		parent::setAuthorizeEndpoint('api.twitch.tv/kraken/oauth2/authorize');
 		parent::setTokenEndpoint('api.twitch.tv/kraken/oauth2/token');
 		parent::setSSLTLS(true);
@@ -50,6 +52,7 @@ class OAuthTwitch extends OAuthBase
 		$this->addResourceScope('channel_feed_read');
 		$this->addResourceScope('channel_read');
 		$this->addResourceScope('user_read');
+		$this->addResourceScope('openid');
 		$this->addHeader('Accept',$this->getMIMEType());
 	}
 	function getMIMEType()
@@ -77,6 +80,9 @@ class OAuthTwitch extends OAuthBase
 				}
 			}
 		}
+	}
+	function retrieveUserData()
+	{
 	}
 	function processResource($RESOURCE)
 	{

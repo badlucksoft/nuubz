@@ -72,6 +72,9 @@ class OAuthFacebook extends OAuthBase
 		$vars = array('client_id' => urlencode($this->getClientID()), 'client_secret' => urlencode($this->getClientSecret()),'redirect_uri' => urlencode('http' . ($this->getSSLTLS() ? 's':'') . '://' . $this->getAuthorizeRedirectURI()),'code' => null);
 		
 	}
+	function retrieveUserData()
+	{
+	}
 	protected function processResource($RESOURCE)
 	{
 	}
