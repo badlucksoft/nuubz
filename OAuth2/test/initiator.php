@@ -35,7 +35,7 @@ SOFTWARE.
 */
 
 ob_start();
-require_once 'oauth.class.php';
+require_once 'oauthgoogle.class.php';
 if( isset($_COOKIE[session_name()]) )
 {
 	session_destroy();
@@ -44,7 +44,7 @@ if( isset($_COOKIE[session_name()]) )
 	exit();
 }
 if(session_id() == '') session_start();
-$_SESSION['oauth_provider'] = new OAuthFacebook();
+$_SESSION['oauth_provider'] = new OAuthGoogle();
 $_SESSION['oauth_provider']->setClientID('your client id');
 $_SESSION['oauth_provider']->setClientSecret('your client secret');
 $_SESSION['oauth_provider']->setAuthorizeRedirectURI('yourdomainhere/receiverscript');

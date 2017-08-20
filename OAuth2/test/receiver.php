@@ -29,8 +29,7 @@ SOFTWARE.
 	This code is demonstration code showing how to process the received OAuth2 response.
 */
 
-require_once 'oauth.class.php';
-require_once 'oauthfacebook.class.php';
+require_once 'oauthgoogle.class.php';
 // We need the OAuthBase subclass in a session variable to proceed, so only go ahead if we have
 // the session cookie.
 if( isset($_COOKIE[session_name()]) ) 
@@ -49,10 +48,24 @@ if( isset($_COOKIE[session_name()]) )
 				$oauth->setAuthorizationCode($_GET['code']);
 				try{
 					$oauth->authenticate();
+					/*
+					If everything goes according to plan, the OAuthBase subclass
+					will authenticate the credentials received, and call its
+					processAuthGrant() function, which in turn will call its
+					retrieveUserData() function. Once this has been done successfully
+					the requested user data will be available through the 
+					subclass. (Still to be implemented.)
+					*/
 					die('Successfully authenticated, ready to retrieve user information.');
+				}
+				catch(OAuthException $e)
+				{
+					//you can handle OAuth exceptions here.
+					die($e->getMessage());
 				}
 				catch(Exception $e)
 				{
+					//other exceptions
 					die($e->getMessage());
 				}
 			}
