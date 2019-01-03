@@ -57,8 +57,8 @@ abstract class OAuthBase
 	const AUTH_BEARER = 0x00000008;
 	
 	protected $serviceName, $tokenEndpoint, $authorizeEndpoint,$authorizeRedirectURI, $authStateValue, $authServerURL, $resourceServerURL, $accessToken, $accessTokenExpiry,$refreshToken, $authorizationCode,
-			$client_id,$client_secret,$resourceScopes,$scopeSeparator,$state,$redirectURI, $useSSLTLS, $clientAuthentication,
-			$user_id,$user_first_name, $user_last_name, $user_email, $transmissionHeaders, $userinfoEndpoint, $revocationEndpoint, $jwksURI;
+			$client_id,$client_secret,$resourceScopes,$scopeSeparator,$state,$redirectURI, $useSSLTLS, $clientAuthentication,$resourceClaims,
+			$user_id,$user_first_name, $user_last_name, $user_email, $transmissionHeaders, $userinfoEndpoint, $revocationEndpoint, $jwksURI, $user_data;
 	function __construct()
 	{
 		$this->serviceName = null;
@@ -81,6 +81,8 @@ abstract class OAuthBase
 		$this->userinfoEndpoint = null;
 		$this->revocationEndpoint = null;
 		$this->transmissionHeaders = array();
+		$this->resourceClaims = null;
+		$this->user_data = null;
 	}
 	/**
 		\brief Turn SSL/TLS usage on or off.
@@ -231,7 +233,7 @@ abstract class OAuthBase
 	}
 	protected function setUserInfoEndpoint($URL)
 	{
-		echo "<br>setting userinfo endpoint to {$URL}<br>";
+		//echo "<br>setting userinfo endpoint to {$URL}<br>";
 		$old = $this->userinfoEndpoint;
 		$this->userinfoEndpoint = OAuthBase::stripProtocol($URL);
 		return $old;
@@ -336,6 +338,24 @@ abstract class OAuthBase
 	{
 		return $this->authorizationCode;
 	}
+	function hasClaimsSpecified()
+	{
+		$hasClaims = false;
+		if( isset($this->resourceClaims) && is_array($this->resourceClaims) && count($this->resourceClaims) > 0) $hasClaims = true;
+		return $hasClaims;
+	}
+	function addResourceClaim($FIELD,$SUBFIELD = null)
+	{
+		if( empty($this->resourceClaims) ) $this->resourceClaims = array();
+		if( ! empty($FIELD) ) {
+			if( ! isset($this->resourceClaims[$FIELD]) || empty($this->resourceClaims[$FIELD])) $this->resourceClaims[$FIELD] = array();
+			if( ! empty($SUBFIELD) ) $this->resourceClaims[$FIELD][$SUBFIELD] = null;
+		}
+	}
+	function getResourceClaims()
+	{
+		return $this->resourceClaims;
+	}
 	function hasScopesSpecified()
 	{
 		$hasScopes = false;
@@ -377,6 +397,12 @@ abstract class OAuthBase
 			$scopes = $this->getResourceScopes();
 			$params['scope'] = implode($this->scopeSeparator,$scopes);
 		}
+		if( $this->hasClaimsSpecified() )
+		{
+			$claims = $this->getResourceClaims();
+			$params['claims'] = json_encode($claims,JSON_FORCE_OBJECT);
+			//preout($params,true);
+		}
 		$output = array();
 		foreach($params as $key => $value)
 			$output[] = $key . '=' . urlencode($value);
@@ -385,7 +411,7 @@ abstract class OAuthBase
 	}
 	function getUserAgentString()
 	{
-		return 'Nuubz OAuth (' . $this->getServiceName() . ')';
+		return 'Nuubz OAuth ($Rev: 1371 $; ' . $this->getServiceName() . ')';
 	}
 	function addHeader($HEADER,$CONTENT)
 	{
@@ -460,8 +486,13 @@ abstract class OAuthBase
 		}
 		else
 			curl_setopt($c,CURLOPT_POSTFIELDS,$vars);
+		//echo 'vars:<br>';
+		//preout($vars);
+		//echo 'refresh token:<br>';
+		//preout($this->refreshToken);
 		curl_setopt($c,CURLOPT_HEADER,true);
 		$result = curl_exec($c);
+		//var_dump($result);
 		if( $result === false)
 		{
 			$ce = curl_errno($c);
@@ -507,11 +538,11 @@ abstract class OAuthBase
 			}
 			else
 			{
-				echo $contentType;
-				print_r($result);
+				//echo $contentType;
+				//print_r($result);
 			}
 		}
-		else print_r($result);
+		//else print_r($result);
 		return $result;
 	}
 	static function generateCode($LENGTH = 32)
@@ -547,6 +578,10 @@ abstract class OAuthBase
 		}
 		return $value;
 	}
+	function getUserData()
+	{
+		return $this->user_data;
+	}
 	function __debugInfo()
 	{
 		return array(
@@ -560,7 +595,7 @@ abstract class OAuthBase
 			'redirectURI' => $this->redirectURI,
 			'useSSLTLS' => $this->useSSLTLS,
 			'accessToken' => (empty($this->accessToken) ? 'Not Found':'Found'),
-			'refreshToken' => (empty($this->refreshToken) ? 'Not Found':'Found')
+			'refreshToken' => (empty($this->refreshToken) ? 'Not Found':'Found'),
 		);
 	}
 	function __sleep()
@@ -584,30 +619,26 @@ abstract class OAuthBase
 			'redirectURI',
 			'useSSLTLS',
 			'clientAuthentication',
+			'resourceClaims',
 			'userinfoEndpoint',
 			'revocationEndpoint',
+			'jwksURI',
 			'transmissionHeaders',
 			'user_id',
 			'user_first_name',
 			'user_last_name',
-			'user_email');
+			'user_email',
+			'user_data'
+			);
 	}
 	function __wakeup()
 	{
 	}
-	/*
-	function __debuginfo()
-	{
-		return array(
-				'serviceName' => $this->serviceName,
-				'authServerURL' => $this->authServerURL,
-				'resourceServerURL' => $this->resourceServerURL,
-				'client_id' => $this->client_id,
-				'SSL/TLS' => ($this->getSSLTLS() ? 'Yes':'No'),
-				'accessTokenExpiry' => $this->accessTokenExpiry
-			);
-	}
-	*/
+	abstract public function getUserIDFieldName();
+	abstract public function getGivenNameFieldName();
+	abstract public function getFamilyNameFieldName();
+	abstract public function getEmailFieldName();
+	abstract public function getUserNameFieldName();
 	/**
 		\brief Process authorization grant
 		

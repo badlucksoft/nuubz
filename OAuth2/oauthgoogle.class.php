@@ -38,9 +38,11 @@ require_once 'oauth.class.php';
 
 class OAuthGoogle extends OAuthBase
 {
+	private $id_token;
 	function __construct()
 	{
 		parent::__construct();
+		$this->id_token = null;
 		parent::setServiceName('Google');
 		$c = curl_init('https://accounts.google.com/.well-known/openid-configuration');
 		curl_setopt($c,CURLOPT_USERAGENT,$this->getUserAgentString());
@@ -59,12 +61,33 @@ class OAuthGoogle extends OAuthBase
 		$this->setAuthFlag(OAuthBase::AUTH_BASIC);
 		$this->setAuthFlag(OAuthBase::AUTH_POST_FORM_ENCODED);
 	}
+	function getUserIDFieldName()
+	{
+		return 'sub';
+	}
+	function getGivenNameFieldName()
+	{
+		return 'given_name';
+	}
+	function getFamilyNameFieldName()
+	{
+		return 'family_name';
+	}
+	function getEmailFieldName()
+	{
+		return 'email';
+	}
+	function getUserNameFieldName()
+	{
+		return 'name';
+	}
 	protected function processAuthGrant($GRANT,$TYPE)
 	{
 		if( ! empty($GRANT) )
 		{
 			if( strcasecmp($TYPE,'application/json') == 0 )
 			{
+//preout($GRANT);
 				try
 				{
 					$tokenData = json_decode($GRANT,true);
@@ -75,6 +98,7 @@ class OAuthGoogle extends OAuthBase
 					if( isset($tokenData['access_token']) ) $this->setAccessToken($tokenData['access_token']);
 					if( isset($tokenData['refresh_token']) ) $this->setRefreshToken($tokenData['refresh_token']);
 					if( isset($tokenData['expires_in']) ) $this->setAccessTokenExpiry(date('Y-m-d H:i:s',strtotime('+' . $tokenData['expires_in'] . ' seconds')));
+					$this->id_token = $tokenData['id_token'];
 					$this->retrieveUserData();
 				}
 				catch(Exception $e)
@@ -89,6 +113,7 @@ class OAuthGoogle extends OAuthBase
 	}
 	function retrieveUserData()
 	{
+//echo 'retrieveUserData()<br>';
 		$c = curl_init('http' . ($this->getSSLTLS() ? 's':'') . '://' . $this->getUserInfoEndpoint());
 		curl_setopt($c,CURLOPT_USERAGENT,$this->getUserAgentString());
 		if( $this->getSSLTLS() )
@@ -107,6 +132,18 @@ class OAuthGoogle extends OAuthBase
 		}
 		if( ! empty($headers) ) curl_setopt($c,CURLOPT_HTTPHEADER,$headers);
 		$data = curl_exec($c);
+//echo 'curl error: ' . curl_error($c) . '<br>'; 
 		curl_close($c);
+//echo 'data:<br>';
+//preout($data);
+		if( ! empty($data) )
+		{
+			$this->user_data = json_decode($data);
+			$this->user_first_name = $this->user_data->given_name;
+			$this->user_last_name = $this->user_data->family_name;
+			$this->user_email = $this->user_data->email;
+			$this->user_id = $this->user_data->sub;
+		}
+//preout($this);
 	}
 }
