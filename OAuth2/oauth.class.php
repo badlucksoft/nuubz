@@ -233,7 +233,6 @@ abstract class OAuthBase
 	}
 	protected function setUserInfoEndpoint($URL)
 	{
-		//echo "<br>setting userinfo endpoint to {$URL}<br>";
 		$old = $this->userinfoEndpoint;
 		$this->userinfoEndpoint = OAuthBase::stripProtocol($URL);
 		return $old;
@@ -308,9 +307,10 @@ abstract class OAuthBase
 		if( ! empty($this->accessTokenExpiry) )
 		{
 			if( time() <= strtotime($this->accessTokenExpiry) ) $expired = false;
+			else $expired = true;
 		}
-		else $expired =false; // assume the token is valid if we have no expiry.
-		return true;
+		else $expired =f alse; // assume the token is valid if we have no expiry.
+		return $expired;
 	}
 	protected static function stripProtocol($URL)
 	{
@@ -401,7 +401,6 @@ abstract class OAuthBase
 		{
 			$claims = $this->getResourceClaims();
 			$params['claims'] = json_encode($claims,JSON_FORCE_OBJECT);
-			//preout($params,true);
 		}
 		$output = array();
 		foreach($params as $key => $value)
@@ -411,7 +410,7 @@ abstract class OAuthBase
 	}
 	function getUserAgentString()
 	{
-		return 'Nuubz OAuth ($Rev: 1371 $; ' . $this->getServiceName() . ')';
+		return 'Nuubz OAuth ($Rev: 2000 $; ' . $this->getServiceName() . ')';
 	}
 	function addHeader($HEADER,$CONTENT)
 	{
@@ -464,7 +463,6 @@ abstract class OAuthBase
 		if( $this->checkAuthFlag(OAuthBase::AUTH_BASIC) && ! is_null($this->getClientID()) && ! is_null($this->getClientSecret()))
 		{
 			$headers[] = 'Authorization: Basic ' . $this->BasicAuth();
-			//echo 'Authorization: Basic ' . $this->BasicAuth() . '<br>';
 		}
 		else
 		{
@@ -486,13 +484,8 @@ abstract class OAuthBase
 		}
 		else
 			curl_setopt($c,CURLOPT_POSTFIELDS,$vars);
-		//echo 'vars:<br>';
-		//preout($vars);
-		//echo 'refresh token:<br>';
-		//preout($this->refreshToken);
 		curl_setopt($c,CURLOPT_HEADER,true);
 		$result = curl_exec($c);
-		//var_dump($result);
 		if( $result === false)
 		{
 			$ce = curl_errno($c);

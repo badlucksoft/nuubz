@@ -43,6 +43,7 @@ class OAuthPatreon extends OAuthBase
 		parent::setServiceName('Patreon');
 		parent::setAuthorizeEndpoint('www.patreon.com/oauth2/authorize');
 		parent::setTokenEndpoint('api.patreon.com/oauth2/token');
+		parrent::setSSLTLS(true);
 	}
 	protected function processAuthGrant($GRANT,$TYPE)
 	{
